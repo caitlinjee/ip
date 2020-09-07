@@ -43,6 +43,10 @@ public class Task {
         this.isDone = true;
     }
 
+    public void markAsUndone() {
+        this.isDone = false;
+    }
+
     /**
      * Overriden toString method for task class
      * @return the string representation for task

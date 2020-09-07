@@ -30,6 +30,8 @@ public class Storage {
     /** Boolean for whether or not Storage should append data to the data file */
     private boolean canAppendToFile = false;
 
+    private String tempFileName = "cait_data_temp.txt";
+
     public Storage(String fileName) {
         this.fileName = fileName;
     }
@@ -182,6 +184,14 @@ public class Storage {
         bufferedWriter.close();
     }
 
+    protected void writeToTempFile(String text) throws IOException {
+        FileWriter writer = new FileWriter(tempFileName, this.canAppendToFile);
+        BufferedWriter bufferedWriter = new BufferedWriter(writer);
+        bufferedWriter.write(text);
+        bufferedWriter.newLine();
+        bufferedWriter.close();
+    }
+
     /**
      * Saves data to be written into the data file.
      * @param text the text to be saved into the data file
@@ -191,6 +201,16 @@ public class Storage {
             createFile(this.fileName);
             Storage data = new Storage(this.fileName, true);
             data.writeToFile(text);
+        } catch (IOException e) {
+            printFileError();
+        }
+    }
+
+    public void saveTempData(String text) {
+        try {
+            createFile(tempFileName);
+            Storage data = new Storage(tempFileName, true);
+            data.writeToTempFile(text);
         } catch (IOException e) {
             printFileError();
         }
@@ -216,7 +236,7 @@ public class Storage {
      */
     public void deleteFromFile(int lineNumber) throws IOException {
         File currFile = new File(this.fileName);
-        File tempFile = new File("cait_data_temp.txt");
+        File tempFile = new File(tempFileName);
         BufferedReader reader = new BufferedReader(new FileReader(currFile));
         BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile));
 
@@ -245,13 +265,86 @@ public class Storage {
     }
 
     /**
+     * TODO
+     * @param startLine
+     * @param endLine
+     * @throws IOException
+     */
+    public void copyLines(int startLine, int endLine, boolean isBottomHalf) throws IOException {
+        if (isBottomHalf) {
+            /*File currFile = new File(this.fileName);
+            File tempFile = new File(tempFileName);
+            BufferedReader reader = new BufferedReader(new FileReader(currFile));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile));
+
+            startLine = startLine - 1;
+            String lineToCopy = Files.readAllLines(Paths.get(this.fileName)).get(startLine);
+            String currLine;
+
+            for (int i = 0; i < endLine; i++) {
+                currLine = Files.readAllLines(Paths.get(this.fileName)).get(i);
+                if (i < startLine) {
+                    writer.write(currLine + '\n');
+                } else {
+                    writer.write(lineToCopy + '\n');
+                    lineToCopy = Files.readAllLines(Paths.get(this.fileName)).get(i);
+                }
+            }
+
+            writer.close();
+            reader.close();
+
+            if (currFile.delete()) {
+                if (!tempFile.renameTo(currFile)) {
+                    printFileError();
+                }
+            } else {
+                printFileError();
+            }*/
+
+            File currFile = new File(this.fileName);
+            File tempFile = new File(tempFileName);
+
+            for (int i = startLine; i < endLine; i++) {
+                String lineToCopy = Files.readAllLines(Paths.get(this.fileName)).get(i);
+                saveTempData(lineToCopy);
+            }
+
+            if (currFile.delete()) {
+                if (!tempFile.renameTo(currFile)) {
+                    printFileError();
+                }
+            } else {
+                printFileError();
+            }
+
+        } else {
+            File currFile = new File(this.fileName);
+            File tempFile = new File(tempFileName);
+            BufferedReader reader = new BufferedReader(new FileReader(currFile));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile));
+
+            startLine = startLine - 1;
+            String lineToCopy;
+
+            for (int i = startLine; i < endLine; i++) {
+                lineToCopy = Files.readAllLines(Paths.get(this.fileName)).get(i);
+                writer.write(lineToCopy + '\n');
+            }
+
+            writer.close();
+            reader.close();
+        }
+    }
+
+    /**
      * Updates the task at a specific line to be done.
      * @param lineNumber the line of task to update to done
      * @throws IOException if there is a problem reading the file
      */
     public void setDoneLine(int lineNumber) throws IOException {
         File currFile = new File(this.fileName);
-        File tempFile = new File("cait_data_temp.txt");
+        File tempFile = new File(tempFileName);
         BufferedReader reader = new BufferedReader(new FileReader(currFile));
         BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile));
 
@@ -283,5 +376,42 @@ public class Storage {
             printFileError();
         }
     }
+
+
+    public void setUndoneLine(int lineNumber) throws IOException {
+        File currFile = new File(this.fileName);
+        File tempFile = new File(tempFileName);
+        BufferedReader reader = new BufferedReader(new FileReader(currFile));
+        BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile));
+
+        assert lineNumber > 0;
+        lineNumber = lineNumber - 1;
+        String lineToUpdate = Files.readAllLines(Paths.get(this.fileName)).get(lineNumber);
+        String[] taskInfo = lineToUpdate.trim().split(" [|] ");
+        taskInfo[1] = String.valueOf(0);
+        String doneLine = String.join(" | ", taskInfo);
+        String currLine;
+
+        while ((currLine = reader.readLine()) != null) {
+            String trimLine = currLine.trim();
+            if (trimLine.equals(lineToUpdate)) {
+                writer.write(doneLine + '\n');
+            } else {
+                writer.write(currLine + '\n');
+            }
+        }
+
+        writer.close();
+        reader.close();
+
+        if (currFile.delete()) {
+            if (!tempFile.renameTo(currFile)) {
+                printFileError();
+            }
+        } else {
+            printFileError();
+        }
+    }
+
 
 }

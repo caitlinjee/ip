@@ -5,9 +5,12 @@ import static java.lang.Integer.parseInt;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.NoSuchElementException;
 
 import dukeexception.DukeException;
 import storage.Storage;
@@ -28,7 +31,7 @@ public class Parser {
     /** Tasklist for dealing with the user's data */
     protected TaskList tasks;
 
-    protected HashMap<String, Task> commandList = new HashMap<String, Task>();
+    protected HashMap<String, ArrayList<Task>> commandList = new HashMap<String, ArrayList<Task>>();
 
     /**
      * Constructs a new Parser object.
@@ -120,6 +123,17 @@ public class Parser {
                     reply = tasks.getFromList(i).toString();
                 }
 
+
+                ArrayList<Task> listOfTasks = new ArrayList<>();
+                for (int i : indexes) {
+                    //listOfTasks.add(tasks.getFromList(indexes[i]));
+                    Task taskToAdd = tasks.getFromList(i);
+                    listOfTasks.add(taskToAdd);
+                    //System.out.println(tasks.getFromList(indexes[index - 1]));
+                }
+
+                keepTrackCommand(command, listOfTasks);
+
                 reply = "Completing tasks...\n";
                 reply += setMultipleDoneTask(indexes);
                 reply += "Task marked as done! Good job!";
@@ -192,6 +206,16 @@ public class Parser {
 
                 //assert index > 0;
 
+
+                ArrayList<Task> listOfTasks = new ArrayList<>();
+                for (int i : indexes) {
+                    //listOfTasks.add(tasks.getFromList(indexes[i]));
+                    Task taskToAdd = tasks.getFromList(i);
+                    listOfTasks.add(taskToAdd);
+                    //System.out.println(tasks.getFromList(indexes[index - 1]));
+                }
+                keepTrackCommand(command, listOfTasks);
+
                 reply = "Deleting tasks...\n";
                 reply += deleteMultipleTasks(indexes);
                 reply += "You now have " + storage.getNumOfTasks() + " tasks.";
@@ -243,6 +267,10 @@ public class Parser {
             String taskName = command.substring(command.indexOf("todo") + 5);
             Todo todo = new Todo(taskName);
             reply = tasks.addToFile(todo);
+
+            ArrayList<Task> listOfTasks = new ArrayList<>();
+            listOfTasks.add(todo);
+            keepTrackCommand(command, listOfTasks);
         }
         return reply;
     }
@@ -265,6 +293,11 @@ public class Parser {
                 String by = command.split("/by ")[1];
                 Deadline deadline = new Deadline(taskName, by);
                 reply = tasks.addToFile(deadline);
+
+
+                ArrayList<Task> listOfTasks = new ArrayList<>();
+                listOfTasks.add(deadline);
+                keepTrackCommand(command, listOfTasks);
             } catch (StringIndexOutOfBoundsException | ArrayIndexOutOfBoundsException e) {
                 reply = printDeadlineByReminder();
             } catch (DateTimeParseException e) {
@@ -293,6 +326,10 @@ public class Parser {
                 String at = command.split("/at ")[1];
                 Event event = new Event(taskName, at);
                 reply = tasks.addToFile(event);
+
+                ArrayList<Task> listOfTasks = new ArrayList<>();
+                listOfTasks.add(event);
+                keepTrackCommand(command, listOfTasks);
             } catch (StringIndexOutOfBoundsException | ArrayIndexOutOfBoundsException e) {
                 reply = printEventAtReminder();
             } catch (DateTimeParseException e) {
@@ -327,9 +364,123 @@ public class Parser {
         return reply;
     }
 
-    protected String undoTask(String command) {
+    protected String undoTask() {
         String reply = "";
+        /*for (Map.Entry<String, Task> pair : commandList.entrySet()) {
+            reply += pair.getKey() + pair.getValue();
+        }*/
+        try {
+            Map.Entry<String, ArrayList<Task>> commandTaskPair = commandList.entrySet().iterator().next();
+            String command = commandTaskPair.getKey();
+            ArrayList<Task> tasks = commandTaskPair.getValue();
+            String[] commandSplit = command.split("\\W+");
+            String commandType = commandSplit[0];
+            Integer[] indexes;
+
+            switch (commandType) {
+            case "done":
+                //bug! (w parseint) and just put empty arraylist inside
+                indexes = new Integer[commandSplit.length - 1];
+                for (int i = 1; i < commandSplit.length; i++) {
+                    indexes[i - 1] = parseInt(commandSplit[i]);
+                }
+                handleDoneUndo(tasks, indexes);
+                reply = "Undo successful!";
+                break;
+            case "delete":
+                //Arrays.sort(indexes, Collections.reverseOrder());
+                indexes = new Integer[commandSplit.length - 1];
+                for (int i = 1; i < commandSplit.length; i++) {
+                    indexes[i - 1] = parseInt(commandSplit[i]);
+                }
+                Collections.reverse(tasks);
+                Arrays.sort(indexes);
+                handleDeleteUndo(tasks, indexes);
+                reply = "Undo successful!";
+                break;
+            case "todo":
+            case "event":
+            case "deadline":
+                handleNewTaskUndo();
+                reply = "Undo successful!";
+                break;
+            case "undo":
+                reply = "Sorry! I can only undo once. D:";
+                break;
+            case "help":
+            case "list":
+            case "find":
+            default:
+                reply = "Looks like there's nothing to undo here!";
+            }
+        } catch (NoSuchElementException e) {
+            reply = "Looks like there's nothing to undo here!";
+        } catch (Exception e) {
+            System.out.println(e);
+        }
         return reply;
+    }
+
+    protected void handleDeleteUndo(ArrayList<Task> listOfTasks, Integer ... indexes) {
+        //copy to line 0 - index
+        //addtofile(task)
+        //copy to line index - end
+        try {
+            int i = 0;
+            int size = indexes.length;
+            for (int index : indexes) {
+                int offset = size - i;
+                //System.out.println("i " + i);
+                //System.out.println("index " + index);
+                //System.out.println(listOfTasks.get(i));
+                storage.copyLines(1, index - 1, false);
+                tasks.appendLineToFile(index, listOfTasks.get(i));
+                storage.copyLines(index - 1, tasks.getNumList() - 1, true);
+                i++;
+            }
+        } catch (Exception e) {
+            System.out.println(" handledeleteundo" + e);
+        }
+    }
+
+    protected void handleDoneUndo(ArrayList<Task> listOfTasks, Integer ... indexes) {
+        try {
+            int i = 0;
+            for (int index : indexes) {
+                if (!listOfTasks.get(i).getIsDone().equals("[\u2718] ")) { //X
+                    storage.setUndoneLine(index);
+                    String doneTask = storage.printLine(index);
+                    doneTask = storage.processLine(doneTask);
+                    tasks.setUndoneList(index);
+                }
+                i++;
+            }
+        } catch (IOException e) {
+            ;
+        }
+    }
+
+    protected void handleNewTaskUndo() {
+        try {
+            int index = tasks.getNumList();
+            System.out.println(index);
+            String deletedTask = storage.printLine(index);
+            deletedTask = storage.processLine(deletedTask);
+            storage.deleteFromFile(index);
+            tasks.deleteList(index);
+            commandList.clear();
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+    }
+
+    protected void keepTrackCommand(String command, ArrayList<Task> listOfTasks) {
+        if (commandList.isEmpty()) {
+            commandList.put(command, listOfTasks);
+        } else {
+            commandList.clear();
+            commandList.put(command, listOfTasks);
+        }
     }
 
     /**
@@ -343,12 +494,14 @@ public class Parser {
             switch (taskType) {
             case "help":
                 reply = showHelp();
+                //keepTrackCommand(command, new Task("nothing"));
                 break;
             case "bye":
                 reply = "Bye! Let's talk again soon!";
                 break;
             case "list":
                 reply = tasks.readList();
+                //keepTrackCommand(command, new Task("nothing"));
                 break;
             case "done":
                 reply = setDoneTask(command);
@@ -367,9 +520,11 @@ public class Parser {
                 break;
             case "find":
                 reply = handleFind(command);
+                //keepTrackCommand(command, new Task("nothing"));
                 break;
             case "undo":
-                reply = undoTask(command);
+                reply = undoTask();
+                keepTrackCommand(command, new ArrayList<>());
                 break;
             default:
                 reply = "Sorry! I don't understand that command. Please try again!";

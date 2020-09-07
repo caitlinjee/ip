@@ -50,11 +50,15 @@ public class TaskList {
         return tasks.get(index - 1);
     }
 
+    public void addToList(int index, Task task) {
+        tasks.add(index, task);
+    }
+
     /**
      * Gets the number of tasks in the task list.
      * @return the number of tasks in the task list.
      */
-    protected int getNumList() {
+    public int getNumList() {
         return this.tasks.size();
     }
 
@@ -96,6 +100,21 @@ public class TaskList {
             Task doneTask = tasks.get(index - 1);
             assert index > 0;
             doneTask.markAsDone();
+        } catch (IndexOutOfBoundsException e) {
+            ;
+        } catch (NumberFormatException e) {
+            ;
+        }
+
+    }
+
+    public void setUndoneList(int index) {
+        //exceptions are already caught in handleDone() method in Parser class
+        try {
+            //int index = parseInt(command.split(" ")[1]);
+            Task doneTask = tasks.get(index - 1);
+            assert index > 0;
+            doneTask.markAsUndone();
         } catch (IndexOutOfBoundsException e) {
             ;
         } catch (NumberFormatException e) {
@@ -154,6 +173,12 @@ public class TaskList {
         reply += task + "\n";
         reply += "You now have " + getNumList() + " tasks.";
         return reply;
+    }
+
+    public void appendLineToFile(int index, Task task) {
+        String taskString = processTasks(task);
+        storage.saveTempData(taskString);
+        addToList(index - 1, task);
     }
 
     /**
