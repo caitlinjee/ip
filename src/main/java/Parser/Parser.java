@@ -125,15 +125,15 @@ public class Parser {
                 }
 
 
-                ArrayList<Task> listOfTasks = new ArrayList<>();
+                /*ArrayList<Task> listOfTasks = new ArrayList<>();
                 for (int i : indexes) {
                     //listOfTasks.add(tasks.getFromList(indexes[i]));
                     Task taskToAdd = tasks.getFromList(i);
                     listOfTasks.add(taskToAdd);
                     //System.out.println(tasks.getFromList(indexes[index - 1]));
-                }
+                }*/
 
-                keepTrackCommand(command, listOfTasks);
+                keepTrackCommand(command, new ArrayList<>());
 
                 reply = "Completing tasks...\n";
                 reply += setMultipleDoneTask(indexes);
@@ -448,12 +448,10 @@ public class Parser {
         try {
             int i = 0;
             for (int index : indexes) {
-                if (!listOfTasks.get(i).getIsDone().equals("[\u2718] ")) { //X
-                    storage.setUndoneLine(index);
-                    String doneTask = storage.printLine(index);
-                    doneTask = storage.processLine(doneTask);
-                    tasks.setUndoneList(index);
-                }
+                storage.setUndoneLine(index);
+                String doneTask = storage.printLine(index);
+                doneTask = storage.processLine(doneTask);
+                tasks.setUndoneList(index);
                 i++;
             }
         } catch (IOException e) {
@@ -464,7 +462,7 @@ public class Parser {
     protected void handleNewTaskUndo() {
         try {
             int index = tasks.getNumList();
-            System.out.println(index);
+            //System.out.println(index);
             String deletedTask = storage.printLine(index);
             deletedTask = storage.processLine(deletedTask);
             storage.deleteFromFile(index);
