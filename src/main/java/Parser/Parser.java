@@ -95,7 +95,8 @@ public class Parser {
         result += "6. done <list number(s)>\n";
         result += "7. delete <list number(s)>\n";
         result += "8. find <keyword>\n";
-        result += "9. bye\n\n";
+        result += "9. undo\n";
+        result += "10. bye\n\n";
         result += "Hope this helped you! :D";
         return result;
     }

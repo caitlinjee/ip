@@ -206,6 +206,10 @@ public class Storage {
         }
     }
 
+    /**
+     * Saves data to be written into the temp data file.
+     * @param text the text to be saved into the temp data file
+     */
     public void saveTempData(String text) {
         try {
             createFile(tempFileName);

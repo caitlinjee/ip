@@ -1,7 +1,5 @@
 package tasklist;
 
-import static java.lang.Integer.parseInt;
-
 import java.util.ArrayList;
 
 import storage.Storage;
@@ -46,12 +44,12 @@ public class TaskList {
         tasks.add(task);
     }
 
-    public Task getFromList(int index) {
-        return tasks.get(index - 1);
-    }
-
     public void addToList(int index, Task task) {
         tasks.add(index, task);
+    }
+
+    public Task getFromList(int index) {
+        return tasks.get(index - 1);
     }
 
     /**
@@ -175,6 +173,11 @@ public class TaskList {
         return reply;
     }
 
+    /**
+     * Adds a task to the data file and to the task list at a specific index.
+     * @param index the index for the task
+     * @param task the task to be added
+     */
     public void appendLineToFile(int index, Task task) {
         String taskString = processTasks(task);
         storage.saveTempData(taskString);
